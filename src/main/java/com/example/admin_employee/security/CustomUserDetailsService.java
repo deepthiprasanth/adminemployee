@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -18,15 +19,17 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Find employee by email instead of username
         Employee emp = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // ✅ Just pass the enum name (e.g., "ADMIN" or "USER")
+        // Return a Spring Security UserDetails object
         return User.builder()
-                .username(emp.getEmail())
-                .password(emp.getPassword())
-                .roles(emp.getRole().name()) // Spring automatically adds ROLE_
+                .username(emp.getEmail())                // Use email as username
+                .password(emp.getPassword())             // Hashed password from DB
+                .roles(emp.getRole().name())             // Automatically adds ROLE_ prefix
                 .build();
     }
 }

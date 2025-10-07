@@ -18,7 +18,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // ✅ Spring Security expects ROLE_ prefix
         return List.of(new SimpleGrantedAuthority("ROLE_" + employee.getRole()));
     }
 
@@ -29,7 +28,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return employee.getUsername();
+        return employee.getEmail(); // Use email instead of username
     }
 
     @Override

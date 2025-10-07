@@ -29,27 +29,48 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
-    // ✅ Register
+    // ✅ Register (with new fields)
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        // Check if email already exists
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new ResponseStatusException(CONFLICT, "Email already registered");
         }
 
+        // Optional confirm password validation
+        if (request.getConfirmPassword() != null && !request.getConfirmPassword().isEmpty()) {
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                throw new ResponseStatusException(BAD_REQUEST, "Passwords do not match");
+            }
+        }
+
+        // Create new employee
         Employee employee = new Employee();
-        employee.setUsername(request.getUsername());
-        employee.setName(request.getName());
+        employee.setFullName(request.getFullName());
+        employee.setPhoneNumber(request.getPhoneNumber());
         employee.setEmail(request.getEmail());
         employee.setPassword(passwordEncoder.encode(request.getPassword()));
+        employee.setBranch(request.getBranch());
 
         try {
             employee.setRole(Employee.Role.valueOf(request.getRole().toUpperCase()));
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(BAD_REQUEST, "Invalid role: must be ADMIN or USER");
+            throw new ResponseStatusException(BAD_REQUEST, "Invalid role: must be ADMIN, USER, or EMPLOYEE");
         }
 
         repository.save(employee);
-        return ResponseEntity.status(CREATED).body("User registered successfully!");
+
+        // Auto-login: Generate JWT token
+        UserDetails userDetails = User.builder()
+                .username(employee.getEmail())
+                .password(employee.getPassword())
+                .roles(employee.getRole().name())
+                .build();
+
+        String token = jwtService.generateToken(userDetails);
+
+        AuthResponse response = new AuthResponse(token, employee.getRole().name(), employee.getId());
+        return ResponseEntity.status(CREATED).body(response);
     }
 
     // ✅ Login

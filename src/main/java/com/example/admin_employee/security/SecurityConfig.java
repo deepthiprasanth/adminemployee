@@ -13,8 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
@@ -30,25 +30,44 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
+    // ✅ Main security filter chain
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ Enable CORS
-                .csrf(csrf -> csrf.disable()) // ✅ Disable CSRF for APIs
+                // Allow cross-origin requests from frontend
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // Disable CSRF (since we use JWT, not sessions)
+                .csrf(csrf -> csrf.disable())
+
+                // Define access rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // ✅ Allow register & login without JWT
+                        // Public endpoints (register, login)
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Admin routes — only accessible to ADMIN role
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/employee/**").hasRole("USER")
-                        .anyRequest().authenticated() // ✅ Everything else needs JWT
+
+                        // Employee routes — accessible to USER or ADMIN
+                        .requestMatchers("/api/employee/**").hasAnyRole("USER", "ADMIN")
+
+                        // Everything else needs authentication
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ No sessions
+
+                // Use stateless JWT-based authentication
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // Provide authentication logic
                 .authenticationProvider(authenticationProvider())
+
+                // Add JWT filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ Authentication Provider (for login)
+    // ✅ Authentication provider setup
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -57,23 +76,23 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // ✅ Password Encoder (BCrypt)
+    // ✅ Password encoder (BCrypt)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ Authentication Manager (needed for AuthController if you expand login later)
+    // ✅ Authentication manager (used in AuthController)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS config (allow frontend -> backend communication)
+    // ✅ CORS Configuration (allow your React app)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // 🔥 frontend origin
+        config.setAllowedOrigins(List.of("http://localhost:3000")); // Your frontend origin
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);

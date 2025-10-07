@@ -10,54 +10,132 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
-    private String name;   // ✅ Add this
+    private String fullName;
+    private String phoneNumber;
     private String email;
     private String password;
 
-    private String phoneNumber;
-    private String address;
-    private String department;
-    private Double salary;
-    private Integer leaveBalance = 12;
+    @Transient
+    private String confirmPassword; // Not mandatory
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String branch;
+
+    // One-to-one relationships
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private ProfessionalDetails professionalDetails;
+
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private OccupationalDetails occupationalDetails;
+
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private PersonalDetails personalDetails;
+
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private SalaryDetails salaryDetails;
+
+    // Enum for role
     public enum Role {
         ADMIN, USER
     }
 
-    // Getters and setters
-    public Long getId() { return id; }
+    // Getters and Setters
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }          // ✅ Getter
-    public void setName(String name) { this.name = name; } // ✅ Setter
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public String getFullName() {
+        return fullName;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
 
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
 
-    public String getDepartment() { return department; }
-    public void setDepartment(String department) { this.department = department; }
+    public String getEmail() {
+        return email;
+    }
 
-    public Double getSalary() { return salary; }
-    public void setSalary(Double salary) { this.salary = salary; }
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    
-    public Integer getLeaveBalance() { return leaveBalance; }
-    public void setLeaveBalance(Integer leaveBalance) { this.leaveBalance = leaveBalance; }
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+
+    public ProfessionalDetails getProfessionalDetails() {
+        return professionalDetails;
+    }
+
+    public void setProfessionalDetails(ProfessionalDetails professionalDetails) {
+        this.professionalDetails = professionalDetails;
+    }
+
+    public OccupationalDetails getOccupationalDetails() {
+        return occupationalDetails;
+    }
+
+    public void setOccupationalDetails(OccupationalDetails occupationalDetails) {
+        this.occupationalDetails = occupationalDetails;
+    }
+
+    public PersonalDetails getPersonalDetails() {
+        return personalDetails;
+    }
+
+    public void setPersonalDetails(PersonalDetails personalDetails) {
+        this.personalDetails = personalDetails;
+    }
+
+    public SalaryDetails getSalaryDetails() {
+        return salaryDetails;
+    }
+
+    public void setSalaryDetails(SalaryDetails salaryDetails) {
+        this.salaryDetails = salaryDetails;
+    }
 }

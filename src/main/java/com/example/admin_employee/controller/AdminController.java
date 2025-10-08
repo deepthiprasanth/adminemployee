@@ -1,6 +1,7 @@
 package com.example.admin_employee.controller;
 
 import com.example.admin_employee.dto.EmployeeDTO;
+import com.example.admin_employee.dto.EmployeeResponseDTO;
 import com.example.admin_employee.model.Employee;
 import com.example.admin_employee.service.EmployeeService;
 import org.springframework.http.ResponseEntity;
@@ -170,9 +171,18 @@ public class AdminController {
 
     // ================ Other CRUD endpoints ==================
     @GetMapping("/employees")
-    public ResponseEntity<List<Employee>> getAllEmployees() {
-        return ResponseEntity.ok(employeeService.getAllEmployees());
+    public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees() {
+        List<Employee> employees = employeeService.getAllEmployees();
+
+        // Filter out ADMINs and map to DTO
+        List<EmployeeResponseDTO> response = employees.stream()
+            .filter(emp -> emp.getRole() != Employee.Role.ADMIN)
+            .map(EmployeeResponseDTO::new)
+            .toList();
+
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/employees/{id}")
     public ResponseEntity<Employee> getEmployee(@PathVariable Long id) {

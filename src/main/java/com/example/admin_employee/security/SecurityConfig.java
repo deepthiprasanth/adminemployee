@@ -30,44 +30,29 @@ public class SecurityConfig {
         this.userDetailsService = userDetailsService;
     }
 
-    // ✅ Main security filter chain
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Allow cross-origin requests from frontend
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // ✅ Public endpoints
+                .requestMatchers("/api/employees/login", "/api/employees/register").permitAll()
 
-                // Disable CSRF (since we use JWT, not sessions)
-                .csrf(csrf -> csrf.disable())
+                // ✅ Protected endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/employee/**").hasAnyRole("USER", "EMPLOYEE", "TEAM_LEAD")
 
-                // Define access rules
-                .authorizeHttpRequests(auth -> auth
-                        // Public endpoints (register, login)
-                        .requestMatchers("/api/auth/**").permitAll()
-
-                        // Admin routes — only accessible to ADMIN role
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // Employee routes — accessible to USER or ADMIN
-                        .requestMatchers("/api/employee/**").hasAnyRole("USER", "ADMIN")
-
-                        // Everything else needs authentication
-                        .anyRequest().authenticated()
-                )
-
-                // Use stateless JWT-based authentication
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Provide authentication logic
-                .authenticationProvider(authenticationProvider())
-
-                // Add JWT filter before UsernamePasswordAuthenticationFilter
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                // ✅ Everything else requires auth
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ Authentication provider setup
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -76,23 +61,20 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // ✅ Password encoder (BCrypt)
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ Authentication manager (used in AuthController)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // ✅ CORS Configuration (allow your React app)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // Your frontend origin
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);

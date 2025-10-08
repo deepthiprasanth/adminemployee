@@ -1,3 +1,4 @@
+                                      
 package com.example.admin_employee.security;
 
 import com.example.admin_employee.model.Employee;
@@ -7,7 +8,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -18,18 +18,28 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.employeeRepository = employeeRepository;
     }
 
+    
+//    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+//        Employee emp = employeeRepository.findByEmail(email)
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//        // ✅ Just pass the enum name (e.g., "ADMIN" or "USER")
+//        return User.builder()
+//                .username(emp.getEmail())
+//                .password(emp.getPassword())
+//                .roles(emp.getRole().name()) // Spring automatically adds ROLE_
+//                .build();
+//    }
     @Override
-    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // Find employee by email instead of username
-        Employee emp = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+        Employee employee = employeeRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        // Return a Spring Security UserDetails object
         return User.builder()
-                .username(emp.getEmail())                // Use email as username
-                .password(emp.getPassword())             // Hashed password from DB
-                .roles(emp.getRole().name())             // Automatically adds ROLE_ prefix
-                .build();
+            .username(employee.getEmail())
+            .password(employee.getPassword())
+            .roles(employee.getRole().name()) // Spring adds "ROLE_" automatically
+            .build();
     }
+
 }

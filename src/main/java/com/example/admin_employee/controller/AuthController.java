@@ -1,14 +1,11 @@
-package com.example.admin_employee.controller;
+                                                                                                                                                                                                             package com.example.admin_employee.controller;
 
-import com.example.admin_employee.dto.AuthRequest;
 import com.example.admin_employee.dto.AuthResponse;
-import com.example.admin_employee.dto.RegisterRequest;
+import com.example.admin_employee.dto.LoginRequest;
 import com.example.admin_employee.model.Employee;
 import com.example.admin_employee.repository.EmployeeRepository;
 import com.example.admin_employee.security.JwtService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,7 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 import static org.springframework.http.HttpStatus.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/employees")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"})
 public class AuthController {
 
     private final EmployeeRepository repository;
@@ -29,71 +27,49 @@ public class AuthController {
         this.jwtService = jwtService;
     }
 
-    // ✅ Register (with new fields)
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        // Check if email already exists
-        if (repository.findByEmail(request.getEmail()).isPresent()) {
-            throw new ResponseStatusException(CONFLICT, "Email already registered");
-        }
-
-        // Optional confirm password validation
-        if (request.getConfirmPassword() != null && !request.getConfirmPassword().isEmpty()) {
-            if (!request.getPassword().equals(request.getConfirmPassword())) {
-                throw new ResponseStatusException(BAD_REQUEST, "Passwords do not match");
-            }
-        }
-
-        // Create new employee
-        Employee employee = new Employee();
-        employee.setFullName(request.getFullName());
-        employee.setPhoneNumber(request.getPhoneNumber());
-        employee.setEmail(request.getEmail());
-        employee.setPassword(passwordEncoder.encode(request.getPassword()));
-        employee.setBranch(request.getBranch());
-
-        try {
-            employee.setRole(Employee.Role.valueOf(request.getRole().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(BAD_REQUEST, "Invalid role: must be ADMIN, USER, or EMPLOYEE");
-        }
-
-        repository.save(employee);
-
-        // Auto-login: Generate JWT token
-        UserDetails userDetails = User.builder()
-                .username(employee.getEmail())
-                .password(employee.getPassword())
-                .roles(employee.getRole().name())
-                .build();
-
-        String token = jwtService.generateToken(userDetails);
-
-        AuthResponse response = new AuthResponse(token, employee.getRole().name(), employee.getId());
-        return ResponseEntity.status(CREATED).body(response);
-    }
-
-    // ✅ Login
+    // ✅ Login endpoint
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        Employee employee = repository.findByEmail(request.getEmail())
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        String email = request.getEmail();
+        String password = request.getPassword();
+
+        // 🔹 Find employee by email
+        Employee employee = repository.findByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), employee.getPassword())) {
+        // 🔹 Validate password
+        if (!passwordEncoder.matches(password, employee.getPassword())) {
             throw new ResponseStatusException(UNAUTHORIZED, "Invalid email or password");
         }
 
-        // Create Spring UserDetails for token generation
-        UserDetails userDetails = User.builder()
-                .username(employee.getEmail())
-                .password(employee.getPassword())
-                .roles(employee.getRole().name())
-                .build();
+        // 🔹 Generate JWT token
+        String token = jwtService.generateToken(employee);
 
-        String token = jwtService.generateToken(userDetails);
+        // 🔹 Return structured response
+        AuthResponse response = new AuthResponse(token, employee.getRole().name(), employee.getId());
+        return ResponseEntity.ok(response);
+    }
 
-        return ResponseEntity.ok(
-                new AuthResponse(token, employee.getRole().name(), employee.getId())
-        );
+    // ✅ Register endpoint
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody LoginRequest request) {
+        String email = request.getEmail();
+        String password = request.getPassword();
+
+        if (repository.findByEmail(email).isPresent()) {
+            throw new ResponseStatusException(CONFLICT, "Email already exists");
+        }
+
+        Employee employee = new Employee();
+        employee.setEmail(email);
+//        employee.setUsername(email); // optional: set username same as email
+        employee.setPassword(passwordEncoder.encode(password));
+        employee.setRole(Employee.Role.USER); // default role
+
+        repository.save(employee);
+
+        String token = jwtService.generateToken(employee);
+        AuthResponse response = new AuthResponse(token, employee.getRole().name(), employee.getId());
+        return ResponseEntity.status(CREATED).body(response);
     }
 }

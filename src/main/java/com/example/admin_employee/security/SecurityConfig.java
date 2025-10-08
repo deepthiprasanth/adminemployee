@@ -33,22 +33,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ Enable CORS
-                .csrf(csrf -> csrf.disable()) // ✅ Disable CSRF for APIs
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // ✅ Allow register & login without JWT
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/employee/**").hasRole("USER")
-                        .anyRequest().authenticated() // ✅ Everything else needs JWT
-                )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // ✅ No sessions
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // ✅ Enable CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // ✅ Disable CSRF for APIs
+            .csrf(csrf -> csrf.disable())
+            // ✅ Role-based authorization & public endpoints
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**").permitAll()          // login/register
+                .requestMatchers("/api/employees/login").permitAll()  // old login endpoint if used
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")    // admin only
+                .requestMatchers("/api/employee/**").hasRole("USER")  // employee only
+                .anyRequest().authenticated()                          // everything else secured
+            )
+            // ✅ Stateless session (JWT)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // ✅ Add AuthenticationProvider & JWT filter
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // ✅ Authentication Provider (for login)
+    // ✅ DAO Authentication Provider (Spring Security)
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
@@ -57,13 +63,13 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // ✅ Password Encoder (BCrypt)
+    // ✅ BCrypt Password Encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // ✅ Authentication Manager (needed for AuthController if you expand login later)
+    // ✅ Authentication Manager (can be injected in AuthController later)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
@@ -73,7 +79,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // 🔥 frontend origin
+        config.setAllowedOrigins(List.of("http://localhost:3000")); // frontend origin
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         config.setAllowCredentials(true);

@@ -17,16 +17,28 @@ public class CustomUserDetailsService implements UserDetailsService {
         this.employeeRepository = employeeRepository;
     }
 
+    
+//    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+//        Employee emp = employeeRepository.findByEmail(email)
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//        // ✅ Just pass the enum name (e.g., "ADMIN" or "USER")
+//        return User.builder()
+//                .username(emp.getEmail())
+//                .password(emp.getPassword())
+//                .roles(emp.getRole().name()) // Spring automatically adds ROLE_
+//                .build();
+//    }
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Employee emp = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        Employee employee = employeeRepository.findByEmail(email)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        // ✅ Just pass the enum name (e.g., "ADMIN" or "USER")
         return User.builder()
-                .username(emp.getEmail())
-                .password(emp.getPassword())
-                .roles(emp.getRole().name()) // Spring automatically adds ROLE_
-                .build();
+            .username(employee.getEmail())
+            .password(employee.getPassword())
+            .roles(employee.getRole().name()) // Spring adds "ROLE_" automatically
+            .build();
     }
+
 }

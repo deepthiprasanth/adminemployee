@@ -35,8 +35,11 @@ public class EmployeeService {
         return employeeRepository.findAll();
     }
 
+ // In EmployeeService.java
     public Employee getEmployeeById(Long id) {
-        return employeeRepository.findById(id).orElseThrow(() -> new RuntimeException("Employee not found"));
+        return employeeRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Employee not found"));
+        // If you need eager loading, you might need to add @EntityGraph
     }
 
     public Employee updateEmployee(Long id, EmployeeDTO dto) {

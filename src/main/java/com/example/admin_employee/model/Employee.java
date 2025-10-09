@@ -1,5 +1,7 @@
 package com.example.admin_employee.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -25,15 +27,19 @@ public class Employee {
 
     // One-to-one relationships
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("employee") // Add this
     private ProfessionalDetails professionalDetails;
 
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("employee") // Add this
     private OccupationalDetails occupationalDetails;
 
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("employee") // Add this
     private PersonalDetails personalDetails;
 
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("employee") // Add this
     private SalaryDetails salaryDetails;
 
     // Enum for role

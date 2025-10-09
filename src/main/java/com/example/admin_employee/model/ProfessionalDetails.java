@@ -3,6 +3,8 @@ package com.example.admin_employee.model;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "professional_details")
 public class ProfessionalDetails {
@@ -27,6 +29,7 @@ public class ProfessionalDetails {
 
     @OneToOne
     @JoinColumn(name = "employee_id")
+    @JsonIgnoreProperties({"professionalDetails", "occupationalDetails", "personalDetails", "salaryDetails"}) // Add this
     private Employee employee;
 
     // Getters and Setters
